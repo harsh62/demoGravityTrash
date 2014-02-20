@@ -19,7 +19,7 @@
         //[self setMultipleTouchEnabled: NO];
         _path = [UIBezierPath bezierPath];
         // set Line width.
-        [_path setLineWidth:8.0];
+       // [_path setLineWidth:1.0];
         
         self.backgroundColor = [SKColor colorWithRed:0.15 green:0.15 blue:0.3 alpha:1.0];
         
@@ -55,6 +55,8 @@
     self.backgroundColor = [SKColor blackColor];
     self.scaleMode = SKSceneScaleModeAspectFit;
     self.physicsBody = [SKPhysicsBody bodyWithEdgeLoopFromRect:self.frame];
+    
+
 }
 
 
@@ -62,12 +64,16 @@
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
     /* Called when a touch begins */
     [_path removeAllPoints];
-
+    arrayOfPoints = [[NSMutableArray alloc] init];
+    _pathArray = [[NSMutableArray alloc] init];
     for (UITouch *touch in touches) {
         currentPoint = [touch locationInNode:self];
+        [arrayOfPoints addObject:[NSValue valueWithCGPoint:currentPoint]];
     }
-    [_path moveToPoint:currentPoint];
+//    [_path moveToPoint:currentPoint];
     previousPoint = currentPoint;
+    initialPoint = currentPoint;
+    
 
 
 }
@@ -76,7 +82,11 @@
     for (UITouch *touch in touches) {
         currentPoint = [touch locationInNode:self];
         midPoint = midpoint(previousPoint, currentPoint);
-        [_path addQuadCurveToPoint:midPoint controlPoint:previousPoint];
+//        [_path addLineToPoint:currentPoint];
+        [arrayOfPoints addObject:[NSValue valueWithCGPoint:currentPoint]];
+
+
+       // [_path addQuadCurveToPoint:midPoint controlPoint:previousPoint];
         previousPoint = currentPoint;
     }
 }
@@ -84,34 +94,132 @@
     for (UITouch *touch in touches) {
     currentPoint = [touch locationInNode: self];
     midPoint = midpoint(previousPoint, currentPoint);
-    [_path addQuadCurveToPoint:midPoint controlPoint:previousPoint];
+        [arrayOfPoints addObject:[NSValue valueWithCGPoint:currentPoint]];
+
+//        [_path addLineToPoint:currentPoint];
+  //  [_path addQuadCurveToPoint:midPoint controlPoint:previousPoint];
     }    
 //    SKSpriteNode *sprite = [[SKSpriteNode alloc] initWithTexture:[SKTexture textureWithImage:[UIImage imageNamed:@"sphere.png"]]];
 //    sprite.physicsBody = [SKPhysicsBody bodyWithPolygonFromPath:[_path CGPath]];
 //    sprite.position =currentPoint;
+            [_path removeAllPoints];
+    NSInteger  i = 0;
     
-    SKShapeNode *wheel = [[SKShapeNode alloc]init];
-    wheel.path = _path.CGPath;
-    wheel.position =CGPointMake(currentPoint.x, currentPoint.y);
-    //wheel.fillColor = [SKColor blueColor];
-    
-    wheel.physicsBody = [SKPhysicsBody bodyWithEdgeLoopFromPath:_path.CGPath];
-    wheel.physicsBody.affectedByGravity = YES;
-    wheel.physicsBody.dynamic = YES;
-    wheel.physicsBody.restitution = 1;
-    SKAction *testAction = [SKAction rotateByAngle:12.28 duration:10];
-    [wheel runAction:testAction];
-    
-//    SKSpriteNode *sprite = [SKSpriteNode spriteNodeWithImageNamed:@"sphere.png"];
-//    sprite.physicsBody = [SKPhysicsBody bodyWithCircleOfRadius:sprite.size.width/2];
-//    sprite.physicsBody.dynamic = YES;
-//    sprite.position = currentPoint;
-//
-//    [self.scene addChild:sprite];
-    [self.scene addChild:wheel];
+    UIBezierPath *_path1;
+    _path1.usesEvenOddFillRule = YES;
     
     
+    
+    CGFloat  sum=0.0;
+    
+    for(NSInteger i=1; i<arrayOfPoints.count;i++){
+        CGPoint point1;
+        CGPoint point2;
+        if(i==arrayOfPoints.count){
+        point1 = [[arrayOfPoints objectAtIndex:i-1] CGPointValue];
+        point2 = [[arrayOfPoints objectAtIndex:0] CGPointValue];
+        }
+        else{
+        point1 =  [[arrayOfPoints objectAtIndex:i-1] CGPointValue];
+        point2 = [[arrayOfPoints objectAtIndex:i] CGPointValue];
+        }
+        CGFloat sum2 =(point2.x-point1.x)*(point2.y+point1.y);
+        sum =  sum + sum2;
+        
+        
+    }
+    
+    if(sum<0)
+    {
+        NSLog(@"counter : %f", sum);
+    }
+    else{
+        NSLog(@"Clock: %f", sum);
+    }
+    
+    for(NSValue *val in arrayOfPoints){
+        if (i==0){
+            _path1 = [UIBezierPath bezierPath];
+            // set Line width.
+           // [_path1 setLineWidth:1.0];
+            
+            [_path1 moveToPoint:[val CGPointValue]];
+        }
+        else{
+            if(i%12==0){
+                [_pathArray addObject:_path1];
+                
+                _path1 = [UIBezierPath bezierPath];
+                // set Line width.
+             //   [_path1 setLineWidth:1.0];
+                
+                [_path1 removeAllPoints];
+                [_path1 moveToPoint:[val CGPointValue]];
+            }
+            else if(i%1==0){
+                [_path1 addLineToPoint:[val CGPointValue]];
+            }
+        }
+        i++;
+    }
+    
+    if(![_pathArray containsObject:_path1]){
+        [_pathArray addObject:_path1];
+    }
+    
+    
+    
+    for(UIBezierPath *pth in _pathArray){
+        SKShapeNode *wheel = [[SKShapeNode alloc]init];
+        
+        wheel.path = pth.CGPath;
+        NSLog(@"%@",pth);
+        wheel.position =CGPointMake(wheel.frame.origin.x,wheel.frame.origin.y);
+        //wheel.fillColor = [SKColor blueColor];
+        
+        
+        
+        
+        @try {
+            wheel.physicsBody = [SKPhysicsBody bodyWithPolygonFromPath:pth.CGPath];
+        }
+        @catch (NSException *exception) {
+            NSLog(@"crash");
+            NSLog(@"----------------");
+            continue;
+        }
+        @finally {
+        }
+        //wheel.physicsBody.affectedByGravity = YES;
+        //wheel.physicsBody.dynamic = YES;
+        //wheel.physicsBody.mass = 550.0f;
+        
+        //wheel.physicsBody.restitution = 1;
+        
+        
+        wheel.physicsBody.dynamic = YES;
+        wheel.physicsBody.affectedByGravity = YES;
+        //wheel.physicsBody.mass = 550.0f;
+        //wheel.physicsBody.categoryBitMask = 1;
+        //wheel.physicsBody.collisionBitMask = 1;
+        //wheel.physicsBody.contactTestBitMask = 1;
+        
+        //    SKAction *testAction = [SKAction rotateByAngle:13.28 duration:10];
+        //    [wheel runAction:testAction];
+        
+        //    SKSpriteNode *sprite = [SKSpriteNode spriteNodeWithImageNamed:@"sphere.png"];
+        //    sprite.physicsBody = [SKPhysicsBody bodyWithCircleOfRadius:sprite.size.width/2];
+        //    sprite.physicsBody.dynamic = YES;
+        //    sprite.position = currentPoint;
+        //
+        //    [self.scene addChild:sprite];
+        [self.scene addChild:wheel];
+    }
+    
+
+
     [_path removeAllPoints];
+
 }
 
 -(void)update:(CFTimeInterval)currentTime {

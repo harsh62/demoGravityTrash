@@ -22,7 +22,11 @@
     
     CGPoint previousPoint;
     CGPoint currentPoint;
+    CGPoint initialPoint;
     CGPoint midPoint;
+    
+    NSMutableArray *_pathArray;
+    NSMutableArray *arrayOfPoints;
 }
 
 @end
